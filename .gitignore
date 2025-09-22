@@ -1,0 +1,42 @@
+# Large datasets - too big for GitHub
+MachineLearningCVE/
+TrafficLabelling/
+train/
+test/
+
+# Model files (can be regenerated)
+models/
+*.pkl
+*.joblib
+
+# Log files
+*.log
+ids_monitor.log
+real_ids_monitor.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
