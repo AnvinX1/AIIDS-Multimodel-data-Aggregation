@@ -74,20 +74,33 @@ class RealTimeDetector:
     def _load_real_models(self):
         """Load real trained models"""
         try:
-            self.scaler = joblib.load(f"{self.model_path}/scaler_real.pkl")
-            self.label_encoder = joblib.load(f"{self.model_path}/label_encoder_real.pkl")
-            self.feature_selector = joblib.load(f"{self.model_path}/feature_selector_real.pkl")
-            self.models['ensemble'] = joblib.load(f"{self.model_path}/ensemble_real_model.pkl")
+            # Try robust models first
+            self.scaler = joblib.load(f"{self.model_path}/scaler_robust.pkl")
+            self.label_encoder = joblib.load(f"{self.model_path}/label_encoder_robust.pkl")
+            self.feature_selector = joblib.load(f"{self.model_path}/feature_selector_robust.pkl")
+            self.models['ensemble'] = joblib.load(f"{self.model_path}/ensemble_robust_model.pkl")
             
-            if os.path.exists(f"{self.model_path}/feature_importance_real.pkl"):
-                self.feature_importance = joblib.load(f"{self.model_path}/feature_importance_real.pkl")
-            
-            if os.path.exists(f"{self.model_path}/training_history_real.pkl"):
-                self.training_history = joblib.load(f"{self.model_path}/training_history_real.pkl")
+            if os.path.exists(f"{self.model_path}/training_history_robust.pkl"):
+                self.training_history = joblib.load(f"{self.model_path}/training_history_robust.pkl")
             
             return True
         except:
-            return False
+            # Fallback to original real models
+            try:
+                self.scaler = joblib.load(f"{self.model_path}/scaler_real.pkl")
+                self.label_encoder = joblib.load(f"{self.model_path}/label_encoder_real.pkl")
+                self.feature_selector = joblib.load(f"{self.model_path}/feature_selector_real.pkl")
+                self.models['ensemble'] = joblib.load(f"{self.model_path}/ensemble_real_model.pkl")
+                
+                if os.path.exists(f"{self.model_path}/feature_importance_real.pkl"):
+                    self.feature_importance = joblib.load(f"{self.model_path}/feature_importance_real.pkl")
+                
+                if os.path.exists(f"{self.model_path}/training_history_real.pkl"):
+                    self.training_history = joblib.load(f"{self.model_path}/training_history_real.pkl")
+                
+                return True
+            except:
+                return False
     
     def _load_demo_models(self):
         """Load demo models as fallback"""
@@ -95,6 +108,8 @@ class RealTimeDetector:
             self.scaler = joblib.load(f"{self.model_path}/quick_demo_scaler.pkl")
             self.label_encoder = joblib.load(f"{self.model_path}/quick_demo_label_encoder.pkl")
             self.models['ensemble'] = joblib.load(f"{self.model_path}/quick_demo_model.pkl")
+            # Don't load feature selector for demo models
+            self.feature_selector = None
             return True
         except:
             return False
@@ -126,8 +141,13 @@ class RealTimeDetector:
             # Handle infinite values
             df = df.replace([np.inf, -np.inf], 0)
             
-            # Create advanced features using real feature engineering
-            df = self._create_real_advanced_features(df)
+            # Check if we have robust models (which expect advanced features)
+            if hasattr(self.scaler, 'feature_names_in_') and 'robust' in str(type(self.scaler)):
+                # Create advanced features for robust models
+                df = self._create_real_advanced_features(df)
+            else:
+                # For demo models, use only basic features
+                df = self._create_basic_features(df)
             
             # Scale features
             X_scaled = self.scaler.transform(df.values)
@@ -205,6 +225,15 @@ class RealTimeDetector:
             
         except Exception as e:
             logger.error(f"Error creating advanced features: {e}")
+            return df
+    
+    def _create_basic_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create basic features for demo models"""
+        try:
+            # Just return the original features without advanced engineering
+            return df
+        except Exception as e:
+            logger.error(f"Error creating basic features: {e}")
             return df
     
     def detect_anomaly(self, flow_data: Dict) -> Tuple[str, float, Dict]:
@@ -611,12 +640,14 @@ def main():
         # Test BENIGN flow
         benign_flow = create_realistic_flow("BENIGN")
         label, confidence, details = detector.detect_anomaly(benign_flow)
-        print(f"✅ BENIGN Flow: {label} (confidence: {confidence:.3f}, risk: {details['risk_level']})")
+        risk_level = details.get('risk_level', 'UNKNOWN')
+        print(f"✅ BENIGN Flow: {label} (confidence: {confidence:.3f}, risk: {risk_level})")
         
         # Test DDoS flow
         ddos_flow = create_realistic_flow("DDoS")
         label, confidence, details = detector.detect_anomaly(ddos_flow)
-        print(f"🚨 DDoS Flow: {label} (confidence: {confidence:.3f}, risk: {details['risk_level']})")
+        risk_level = details.get('risk_level', 'UNKNOWN')
+        print(f"🚨 DDoS Flow: {label} (confidence: {confidence:.3f}, risk: {risk_level})")
         
         # Get detection statistics
         stats = detector.get_detection_stats()
