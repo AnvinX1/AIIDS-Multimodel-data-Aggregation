@@ -409,26 +409,27 @@ def main():
                     
                     if st.button("🔍 Analyze Sample Flow"):
                         flow_data = create_sample_flow(attack_type)
-                        result = st.session_state.detector.detect_anomaly(flow_data)
-                        st.session_state.detection_history.append(result)
+                        label, confidence, details = st.session_state.detector.detect_anomaly(flow_data)
+                        st.session_state.detection_history.append(details)
                         
                         # Display results
                         st.subheader("Detection Results")
                         
                         col_a, col_b, col_c = st.columns(3)
                         with col_a:
-                            st.metric("Predicted Type", result['predicted_label'])
+                            st.metric("Predicted Type", label)
                         with col_b:
-                            st.metric("Confidence", f"{result['confidence']:.3f}")
+                            st.metric("Confidence", f"{confidence:.3f}")
                         with col_c:
-                            st.metric("Risk Level", result['risk_level'])
+                            st.metric("Risk Level", details.get('risk_level', 'UNKNOWN'))
                         
                         # Risk indicator
-                        if result['risk_level'] == 'CRITICAL':
+                        risk_level = details.get('risk_level', 'UNKNOWN')
+                        if risk_level == 'CRITICAL':
                             st.error("🚨 CRITICAL THREAT DETECTED!")
-                        elif result['risk_level'] == 'HIGH':
+                        elif risk_level == 'HIGH':
                             st.warning("⚠️ HIGH RISK DETECTED!")
-                        elif result['risk_level'] == 'MEDIUM':
+                        elif risk_level == 'MEDIUM':
                             st.info("ℹ️ MEDIUM RISK DETECTED")
                         else:
                             st.success("✅ LOW RISK - BENIGN TRAFFIC")
@@ -531,19 +532,19 @@ def main():
                             'Idle Min': 200
                         }
                         
-                        result = st.session_state.detector.detect_anomaly(flow_data)
-                        st.session_state.detection_history.append(result)
+                        label, confidence, details = st.session_state.detector.detect_anomaly(flow_data)
+                        st.session_state.detection_history.append(details)
                         
                         # Display results
                         st.subheader("Detection Results")
                         
                         col_a, col_b, col_c = st.columns(3)
                         with col_a:
-                            st.metric("Predicted Type", result['predicted_label'])
+                            st.metric("Predicted Type", label)
                         with col_b:
-                            st.metric("Confidence", f"{result['confidence']:.3f}")
+                            st.metric("Confidence", f"{confidence:.3f}")
                         with col_c:
-                            st.metric("Risk Level", result['risk_level'])
+                            st.metric("Risk Level", details.get('risk_level', 'UNKNOWN'))
                 
                 elif input_method == "Upload CSV":
                     uploaded_file = st.file_uploader("Upload CSV file with network flows", type=['csv'])
@@ -556,9 +557,9 @@ def main():
                             if st.button("🔍 Analyze All Flows"):
                                 results = []
                                 for _, row in df.iterrows():
-                                    result = st.session_state.detector.detect_anomaly(row.to_dict())
-                                    results.append(result)
-                                    st.session_state.detection_history.append(result)
+                                    label, confidence, details = st.session_state.detector.detect_anomaly(row.to_dict())
+                                    results.append(details)
+                                    st.session_state.detection_history.append(details)
                                 
                                 st.success(f"Analyzed {len(results)} flows!")
                                 
@@ -576,21 +577,21 @@ def main():
                     attack_types = ["BENIGN", "DDoS"]
                     attack_type = np.random.choice(attack_types)
                     flow_data = create_sample_flow(attack_type)
-                    result = st.session_state.detector.detect_anomaly(flow_data)
-                    st.session_state.detection_history.append(result)
+                    label, confidence, details = st.session_state.detector.detect_anomaly(flow_data)
+                    st.session_state.detection_history.append(details)
                     
                     st.write(f"**Tested:** {attack_type} flow")
-                    st.write(f"**Predicted:** {result['predicted_label']}")
-                    st.write(f"**Confidence:** {result['confidence']:.3f}")
-                    st.write(f"**Risk:** {result['risk_level']}")
+                    st.write(f"**Predicted:** {label}")
+                    st.write(f"**Confidence:** {confidence:.3f}")
+                    st.write(f"**Risk:** {details.get('risk_level', 'UNKNOWN')}")
                 
                 if st.button("🔄 Auto Test (5 flows)"):
                     progress_bar = st.progress(0)
                     for i in range(5):
                         attack_type = np.random.choice(["BENIGN", "DDoS"])
                         flow_data = create_sample_flow(attack_type)
-                        result = st.session_state.detector.detect_anomaly(flow_data)
-                        st.session_state.detection_history.append(result)
+                        label, confidence, details = st.session_state.detector.detect_anomaly(flow_data)
+                        st.session_state.detection_history.append(details)
                         progress_bar.progress((i + 1) / 5)
                         time.sleep(0.5)
                     st.success("Auto test completed!")
@@ -659,14 +660,14 @@ def main():
                     
                     for i, attack_type in enumerate(test_types):
                         flow_data = create_sample_flow(attack_type)
-                        result = st.session_state.detector.detect_anomaly(flow_data)
+                        label, confidence, details = st.session_state.detector.detect_anomaly(flow_data)
                         test_results.append({
                             'actual': attack_type,
-                            'predicted': result['predicted_label'],
-                            'confidence': result['confidence'],
-                            'correct': attack_type == result['predicted_label']
+                            'predicted': label,
+                            'confidence': confidence,
+                            'correct': attack_type == label
                         })
-                        st.session_state.detection_history.append(result)
+                        st.session_state.detection_history.append(details)
                     
                     # Calculate accuracy
                     correct = sum(1 for r in test_results if r['correct'])
