@@ -281,38 +281,38 @@ def main():
     with st.sidebar:
         st.header("🎛️ Control Panel")
         
-        # System Status
-        st.subheader("System Status")
-        if st.session_state.detector and st.session_state.detector.model:
-            st.markdown('<p class="status-online">🟢 System Online</p>', unsafe_allow_html=True)
-            st.success("AI Models Loaded Successfully")
-        else:
-            st.markdown('<p class="status-offline">🔴 System Offline</p>', unsafe_allow_html=True)
-            st.error("AI Models Not Available")
-        
-        # Monitoring Controls
-        st.subheader("Monitoring Controls")
-        if st.button("🔄 Refresh System Status"):
-            st.session_state.detector = load_detector()
-            st.rerun()
-        
-        # Detection History
-        st.subheader("Detection History")
-        st.write(f"Total Detections: {len(st.session_state.detection_history)}")
-        if st.session_state.detection_history:
-            anomalies = sum(1 for d in st.session_state.detection_history if d.get('is_anomaly', False))
-            st.write(f"Anomalies Detected: {anomalies}")
-            if len(st.session_state.detection_history) > 0:
-                anomaly_rate = anomalies / len(st.session_state.detection_history) * 100
-                st.write(f"Anomaly Rate: {anomaly_rate:.1f}%")
-        
-        # Clear History
-        if st.button("🗑️ Clear History"):
-            st.session_state.detection_history = []
-            st.rerun()
+    # System Status
+    st.subheader("System Status")
+    if st.session_state.detector and hasattr(st.session_state.detector, 'models') and st.session_state.detector.models:
+        st.markdown('<p class="status-online">🟢 System Online</p>', unsafe_allow_html=True)
+        st.success("AI Models Loaded Successfully")
+    else:
+        st.markdown('<p class="status-offline">🔴 System Offline</p>', unsafe_allow_html=True)
+        st.error("AI Models Not Available")
+    
+    # Monitoring Controls
+    st.subheader("Monitoring Controls")
+    if st.button("🔄 Refresh System Status"):
+        st.session_state.detector = load_detector()
+        st.rerun()
+    
+    # Detection History
+    st.subheader("Detection History")
+    st.write(f"Total Detections: {len(st.session_state.detection_history)}")
+    if st.session_state.detection_history:
+        anomalies = sum(1 for d in st.session_state.detection_history if d.get('is_anomaly', False))
+        st.write(f"Anomalies Detected: {anomalies}")
+        if len(st.session_state.detection_history) > 0:
+            anomaly_rate = anomalies / len(st.session_state.detection_history) * 100
+            st.write(f"Anomaly Rate: {anomaly_rate:.1f}%")
+    
+    # Clear History
+    if st.button("🗑️ Clear History"):
+        st.session_state.detection_history = []
+        st.rerun()
     
     # Main content area
-    if st.session_state.detector and st.session_state.detector.model:
+    if st.session_state.detector and hasattr(st.session_state.detector, 'models') and st.session_state.detector.models:
         
         # Create tabs
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏠 Dashboard", "🔍 Real-time Detection", "📊 Analytics", "🧪 Testing", "📈 System Info"])
